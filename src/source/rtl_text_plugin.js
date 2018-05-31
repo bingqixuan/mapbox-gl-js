@@ -15,7 +15,7 @@ const isAbsoluteUrl = (url) => {
 
 const resolvePluginUrl = (path) => {
     if (isAbsoluteUrl(path)) {
-      return path;
+        return path;
     }
     // resolves from root URL
     // if path begins with a '/', it will be appended to the domain
