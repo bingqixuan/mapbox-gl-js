@@ -3,8 +3,13 @@ import Map from '../src/ui/map';
 import config from '../src/util/config';
 import window from '../src/util/window';
 import browser from '../src/util/browser';
+import {plugin as rtlTextPlugin} from '../src/source/rtl_text_plugin';
+import rtlText from '@mapbox/mapbox-gl-rtl-text';
 import fs from 'fs';
 import path from 'path';
+
+rtlTextPlugin['applyArabicShaping'] = rtlText.applyArabicShaping;
+rtlTextPlugin['processBidirectionalText'] = rtlText.processBidirectionalText;
 
 module.exports = function(style, options, _callback) { // eslint-disable-line import/no-commonjs
     let wasCallbackCalled = false;
@@ -41,8 +46,6 @@ module.exports = function(style, options, _callback) { // eslint-disable-line im
         skew: options.skew || [0, 0],
         fadeDuration: options.fadeDuration || 0
     });
-
-    map.setRTLTextPlugin('/node_modules/@mapbox/mapbox-gl-rtl-text.js');
 
     // Configure the map to never stop the render loop
     map.repaint = true;
