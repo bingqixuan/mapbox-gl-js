@@ -1,29 +1,11 @@
 // @flow
 
 import { Event, Evented } from '../util/evented';
-import window from '../util/window';
+import browser from '../util/browser';
 
 let pluginRequested = false;
 let pluginURL = null;
 let foregroundLoadComplete = false;
-
-const isAbsoluteUrl = (url) => {
-    // handles https, http, and protocol-relative URLs
-    const isAbsolute = new RegExp('^([a-z]+://|//)', 'i');
-    return isAbsolute.exec(url);
-};
-
-const resolvePluginUrl = (path) => {
-    if (isAbsoluteUrl(path)) {
-        return path;
-    }
-    // resolves from root URL
-    // if path begins with a '/', it will be appended to the domain
-    // otherwise, it will be appended to the full path
-    const a = window.document.createElement('a');
-    a.href = path;
-    return a.href;
-};
 
 export const evented = new Evented();
 
@@ -53,7 +35,7 @@ export const setRTLTextPlugin = function(url: string, callback: ErrorCallback) {
         throw new Error('setRTLTextPlugin cannot be called multiple times.');
     }
     pluginRequested = true;
-    pluginURL = resolvePluginUrl(url);
+    pluginURL = browser.resolveURL(url);
     _completionCallback = (error?: Error) => {
         if (error) {
             // Clear loaded state to allow retries
