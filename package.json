@@ -123,7 +123,7 @@
     "build-benchmarks-view": "BENCHMARK_VERSION=${BENCHMARK_VERSION:-\"$(git rev-parse --abbrev-ref HEAD) $(git rev-parse --short=7 HEAD)\"} rollup -c bench/rollup_config_benchmarks_view.js",
     "watch-benchmarks": "BENCHMARK_VERSION=${BENCHMARK_VERSION:-\"$(git rev-parse --abbrev-ref HEAD) $(git rev-parse --short=7 HEAD)\"} rollup -c bench/rollup_config_benchmarks.js --watch",
     "watch-benchmarks-view": "BENCHMARK_VERSION=${BENCHMARK_VERSION:-\"$(git rev-parse --abbrev-ref HEAD) $(git rev-parse --short=7 HEAD)\"} rollup -c bench/rollup_config_benchmarks_view.js --watch",
-    "start-server": "st --no-cache -H 0.0.0.0 --port 9966 --index index.html .",
+    "start-server": "st --no-cache -H 127.0.0.1 --port 9966 --index index.html .",
     "start": "run-p build-token watch-css watch-dev watch-benchmarks watch-benchmarks-view start-server",
     "start-debug": "run-p build-token watch-css watch-dev start-server",
     "start-bench": "run-p build-token watch-benchmarks watch-benchmarks-view start-server",
