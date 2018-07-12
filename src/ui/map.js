@@ -39,6 +39,7 @@ import type KeyboardHandler from './handler/keyboard';
 import type DoubleClickZoomHandler from './handler/dblclick_zoom';
 import type TouchZoomRotateHandler from './handler/touch_zoom_rotate';
 import type {TaskID} from '../util/task_queue';
+import type {Cancelable} from '../types/cancelable';
 
 type ControlPosition = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 
@@ -107,6 +108,8 @@ const defaultOptions = {
 
     bearingSnap: 7,
 
+    clickTolerance: 3,
+
     hash: false,
 
     attributionControl: true,
@@ -123,7 +126,8 @@ const defaultOptions = {
     maxTileCacheSize: null,
 
     transformRequest: null,
-    fadeDuration: 300
+    fadeDuration: 300,
+    crossSourceCollisions: true
 };
 
 /**
@@ -148,12 +152,16 @@ const defaultOptions = {
  * where `:owner` is your Mapbox account name and `:style` is the style ID. Or you can use one of the following
  * [the predefined Mapbox styles](https://www.mapbox.com/maps/):
  *
- *  * `mapbox://styles/mapbox/streets-v9`
- *  * `mapbox://styles/mapbox/outdoors-v9`
+ *  * `mapbox://styles/mapbox/streets-v10`
+ *  * `mapbox://styles/mapbox/outdoors-v10`
  *  * `mapbox://styles/mapbox/light-v9`
  *  * `mapbox://styles/mapbox/dark-v9`
  *  * `mapbox://styles/mapbox/satellite-v9`
- *  * `mapbox://styles/mapbox/satellite-streets-v9`
+ *  * `mapbox://styles/mapbox/satellite-streets-v10`
+ *  * `mapbox://styles/mapbox/navigation-preview-day-v2`
+ *  * `mapbox://styles/mapbox/navigation-preview-night-v2`
+ *  * `mapbox://styles/mapbox/navigation-guidance-day-v2`
+ *  * `mapbox://styles/mapbox/navigation-guidance-night-v2`
  *
  * Tilesets hosted with Mapbox can be style-optimized if you append `?optimize=true` to the end of your style URL, like `mapbox://styles/mapbox/streets-v9?optimize=true`.
  * Learn more about style-optimized vector tiles in our [API documentation](https://www.mapbox.com/api-documentation/#retrieve-tiles).
@@ -165,6 +173,7 @@ const defaultOptions = {
  *   bearing will snap to north. For example, with a `bearingSnap` of 7, if the user rotates
  *   the map within 7 degrees of north, the map will automatically snap to exact north.
  * @param {boolean} [options.pitchWithRotate=true] If `false`, the map's pitch (tilt) control with "drag to rotate" interaction will be disabled.
+ * @param {number} [options.clickTolerance=3] The max number of pixels a user can shift the mouse pointer during a click for it to be considered a valid click (as opposed to a mouse drag).
  * @param {boolean} [options.attributionControl=true] If `true`, an {@link AttributionControl} will be added to the map.
  * @param {string} [options.logoPosition='bottom-left'] A string representing the position of the Mapbox wordmark on the map. Valid options are `top-left`,`top-right`, `bottom-left`, `bottom-right`.
  * @param {boolean} [options.failIfMajorPerformanceCaveat=false] If `true`, map creation will fail if the performance of Mapbox
@@ -194,6 +203,7 @@ const defaultOptions = {
  *   Expected to return an object with a `url` property and optionally `headers` and `credentials` properties.
  * @param {boolean} [options.collectResourceTiming=false] If `true`, Resource Timing API information will be collected for requests made by GeoJSON and Vector Tile web workers (this information is normally inaccessible from the main Javascript thread). Information will be returned in a `resourceTiming` property of relevant `data` events.
  * @param {number} [options.fadeDuration=300] Controls the duration of the fade-in/fade-out animation for label collisions, in milliseconds. This setting affects all symbol layers. This setting does not affect the duration of runtime styling transitions or raster tile cross-fading.
+ * @param {boolean} [options.crossSourceCollisions=true] If `true`, symbols from multiple sources can collide with each other during collision detection. If `false`, collision detection is run separately for the symbols in each source.
  * @example
  * var map = new mapboxgl.Map({
  *   container: 'map',
@@ -218,7 +228,7 @@ class Map extends Camera {
     painter: Painter;
 
     _container: HTMLElement;
-    _missingCSSContainer: HTMLElement;
+    _missingCSSCanary: HTMLElement;
     _canvasContainer: HTMLElement;
     _controlContainer: HTMLElement;
     _controlPositions: {[string]: HTMLElement};
@@ -231,7 +241,7 @@ class Map extends Camera {
     _canvas: HTMLCanvasElement;
     _transformRequest: RequestTransformFunction;
     _maxTileCacheSize: number;
-    _frameId: any;
+    _frame: ?Cancelable;
     _styleDirty: ?boolean;
     _sourcesDirty: ?boolean;
     _placementDirty: ?boolean;
@@ -243,6 +253,7 @@ class Map extends Camera {
     _hash: Hash;
     _delegatedListeners: any;
     _fadeDuration: number;
+    _crossSourceCollisions: boolean;
     _crossFadingFactor: number;
     _collectResourceTiming: boolean;
     _renderTaskQueue: TaskQueue;
@@ -302,6 +313,7 @@ class Map extends Camera {
         this._bearingSnap = options.bearingSnap;
         this._refreshExpiredTiles = options.refreshExpiredTiles;
         this._fadeDuration = options.fadeDuration;
+        this._crossSourceCollisions = options.crossSourceCollisions;
         this._crossFadingFactor = 1;
         this._collectResourceTiming = options.collectResourceTiming;
         this._renderTaskQueue = new TaskQueue();
@@ -339,6 +351,9 @@ class Map extends Camera {
 
         this._setupContainer();
         this._setupPainter();
+        if (this.painter === undefined) {
+            throw new Error(`Failed to initialize WebGL.`);
+        }
 
         this.on('move', this._update.bind(this, false));
         this.on('zoom', this._update.bind(this, true));
@@ -434,29 +449,26 @@ class Map extends Camera {
         this.transform.resize(width, height);
         this.painter.resize(width, height);
 
-        return this
-            .fire(new Event('movestart', eventData))
+        this.fire(new Event('movestart', eventData))
             .fire(new Event('move', eventData))
             .fire(new Event('resize', eventData))
             .fire(new Event('moveend', eventData));
+
+        return this;
     }
 
     /**
-     * Returns the map's geographical bounds.
+     * Returns the map's geographical bounds. When the bearing or pitch is non-zero, the visible region is not
+     * an axis-aligned rectangle, and the result is the smallest bounds that encompasses the visible region.
      *
-     * @returns {LngLatBounds} The map's geographical bounds.
+     * @returns {LngLatBounds}
      */
     getBounds() {
-        const bounds = new LngLatBounds(
-            this.transform.pointLocation(new Point(0, this.transform.height)),
-            this.transform.pointLocation(new Point(this.transform.width, 0)));
-
-        if (this.transform.angle || this.transform.pitch) {
-            bounds.extend(this.transform.pointLocation(new Point(this.transform.size.x, 0)));
-            bounds.extend(this.transform.pointLocation(new Point(0, this.transform.size.y)));
-        }
-
-        return bounds;
+        return new LngLatBounds()
+            .extend(this.transform.pointLocation(new Point(0, 0)))
+            .extend(this.transform.pointLocation(new Point(this.transform.width, 0)))
+            .extend(this.transform.pointLocation(new Point(this.transform.width, this.transform.height)))
+            .extend(this.transform.pointLocation(new Point(0, this.transform.height)));
     }
 
     /**
@@ -1364,7 +1376,7 @@ class Map extends Camera {
     /**
      * Sets the any combination of light values.
      *
-     * @param light Light properties to set. Must conform to the [Mapbox Style Specification](https://www.mapbox.com/mapbox-gl-style-spec/).
+     * @param light Light properties to set. Must conform to the [Mapbox Style Specification](https://www.mapbox.com/mapbox-gl-style-spec/#light).
      * @returns {Map} `this`
      */
     setLight(light: LightSpecification) {
@@ -1464,12 +1476,23 @@ class Map extends Camera {
         return [width, height];
     }
 
+    _detectMissingCSS(): void {
+        const computedColor = window.getComputedStyle(this._missingCSSCanary).getPropertyValue('background-color');
+        if (computedColor !== 'rgb(250, 128, 114)') {
+            warnOnce('This page appears to be missing CSS declarations for ' +
+                'Mapbox GL JS, which may cause the map to display incorrectly. ' +
+                'Please ensure your page includes mapbox-gl.css, as described ' +
+                'in https://www.mapbox.com/mapbox-gl-js/api/.');
+        }
+    }
+
     _setupContainer() {
         const container = this._container;
         container.classList.add('mapboxgl-map');
 
-        const missingCSSContainer = this._missingCSSContainer = DOM.create('div', 'mapboxgl-missing-css', container);
-        missingCSSContainer.innerHTML = 'Missing Mapbox GL JS CSS';
+        const missingCSSCanary = this._missingCSSCanary = DOM.create('div', 'mapboxgl-canary', container);
+        missingCSSCanary.style.visibility = 'hidden';
+        this._detectMissingCSS();
 
         const canvasContainer = this._canvasContainer = DOM.create('div', 'mapboxgl-canvas-container', container);
         if (this._interactive) {
@@ -1524,9 +1547,9 @@ class Map extends Camera {
 
     _contextLost(event: *) {
         event.preventDefault();
-        if (this._frameId) {
-            browser.cancelFrame(this._frameId);
-            this._frameId = null;
+        if (this._frame) {
+            this._frame.cancel();
+            this._frame = null;
         }
         this.fire(new Event('webglcontextlost', {originalEvent: event}));
     }
@@ -1636,7 +1659,7 @@ class Map extends Camera {
             this.style._updateSources(this.transform);
         }
 
-        this._placementDirty = this.style && this.style._updatePlacement(this.painter.transform, this.showCollisionBoxes, this._fadeDuration);
+        this._placementDirty = this.style && this.style._updatePlacement(this.painter.transform, this.showCollisionBoxes, this._fadeDuration, this._crossSourceCollisions);
 
         // Actually draw
         this.painter.render(this.style, {
@@ -1681,9 +1704,11 @@ class Map extends Camera {
      */
     remove() {
         if (this._hash) this._hash.remove();
-        browser.cancelFrame(this._frameId);
+        if (this._frame) {
+            this._frame.cancel();
+            this._frame = null;
+        }
         this._renderTaskQueue.clear();
-        this._frameId = null;
         this.setStyle(null);
         if (typeof window !== 'undefined') {
             window.removeEventListener('resize', this._onWindowResize, false);
@@ -1693,15 +1718,15 @@ class Map extends Camera {
         if (extension) extension.loseContext();
         removeNode(this._canvasContainer);
         removeNode(this._controlContainer);
-        removeNode(this._missingCSSContainer);
+        removeNode(this._missingCSSCanary);
         this._container.classList.remove('mapboxgl-map');
         this.fire(new Event('remove'));
     }
 
     _rerender() {
-        if (this.style && !this._frameId) {
-            this._frameId = browser.frame(() => {
-                this._frameId = null;
+        if (this.style && !this._frame) {
+            this._frame = browser.frame(() => {
+                this._frame = null;
                 this._render();
             });
         }
@@ -1713,7 +1738,7 @@ class Map extends Camera {
 
     _onWindowResize() {
         if (this._trackResize) {
-            this.stop().resize()._update();
+            this.resize()._update();
         }
     }
 

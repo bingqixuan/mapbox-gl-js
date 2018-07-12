@@ -110,6 +110,7 @@ declare type GeojsonSourceSpecification = {|
     "type": "geojson",
     "data"?: mixed,
     "maxzoom"?: number,
+    "attribution"?: string,
     "buffer"?: number,
     "tolerance"?: number,
     "cluster"?: boolean,
@@ -202,7 +203,7 @@ declare type SymbolLayerSpecification = {|
     "maxzoom"?: number,
     "filter"?: FilterSpecification,
     "layout"?: {|
-        "symbol-placement"?: PropertyValueSpecification<"point" | "line">,
+        "symbol-placement"?: PropertyValueSpecification<"point" | "line" | "line-center">,
         "symbol-spacing"?: PropertyValueSpecification<number>,
         "symbol-avoid-edges"?: PropertyValueSpecification<boolean>,
         "icon-allow-overlap"?: PropertyValueSpecification<boolean>,
@@ -348,6 +349,7 @@ declare type RasterLayerSpecification = {|
         "raster-brightness-max"?: PropertyValueSpecification<number>,
         "raster-saturation"?: PropertyValueSpecification<number>,
         "raster-contrast"?: PropertyValueSpecification<number>,
+        "raster-resampling"?: PropertyValueSpecification<"linear" | "nearest">,
         "raster-fade-duration"?: PropertyValueSpecification<number>
     |}
 |}
