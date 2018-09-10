@@ -7,9 +7,11 @@ import {plugin as rtlTextPlugin} from '../src/source/rtl_text_plugin';
 import rtlText from '@mapbox/mapbox-gl-rtl-text';
 import fs from 'fs';
 import path from 'path';
+import customLayerImplementations from './integration/custom_layer_implementations';
 
 rtlTextPlugin['applyArabicShaping'] = rtlText.applyArabicShaping;
 rtlTextPlugin['processBidirectionalText'] = rtlText.processBidirectionalText;
+rtlTextPlugin['processStyledBidirectionalText'] = rtlText.processStyledBidirectionalText;
 
 module.exports = function(style, options, _callback) { // eslint-disable-line import/no-commonjs
     let wasCallbackCalled = false;
@@ -29,8 +31,8 @@ module.exports = function(style, options, _callback) { // eslint-disable-line im
     window.devicePixelRatio = options.pixelRatio;
 
     const container = window.document.createElement('div');
-    Object.defineProperty(container, 'offsetWidth', {value: options.width});
-    Object.defineProperty(container, 'offsetHeight', {value: options.height});
+    Object.defineProperty(container, 'clientWidth', {value: options.width});
+    Object.defineProperty(container, 'clientHeight', {value: options.height});
 
     // We are self-hosting test files.
     config.REQUIRE_ACCESS_TOKEN = false;
@@ -139,6 +141,10 @@ module.exports = function(style, options, _callback) { // eslint-disable-line im
         } else if (operation[0] === 'addImage') {
             const {data, width, height} = PNG.sync.read(fs.readFileSync(path.join(__dirname, './integration', operation[2])));
             map.addImage(operation[1], {width, height, data: new Uint8Array(data)}, operation[3] || {});
+            applyOperations(map, operations.slice(1), callback);
+        } else if (operation[0] === 'addCustomLayer') {
+            map.addLayer(new customLayerImplementations[operation[1]](), operation[2]);
+            map._render();
             applyOperations(map, operations.slice(1), callback);
 
         } else {

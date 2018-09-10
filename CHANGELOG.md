@@ -1,3 +1,61 @@
+## 0.48.0
+August 16, 2018
+
+## ⚠️ Breaking changes
+* Treat tiles that error with status 404 as empty renderable tiles to prevent rendering duplicate features in some sparse tilesets ([#6803](https://github.com/mapbox/mapbox-gl-js/pull/6803))
+
+## 🐛 Bug fixes
+* Fix issue where `text-max-angle` property was being calculated incorrectly internally, causing potential rendering errors when `"text-placement": line`
+* Require `feature.id` when using `Map#setFeatureState` ([#6974](https://github.com/mapbox/mapbox-gl-js/pull/6974))
+* Fix issue with removing the `GeolocateControl` when user location is being used ([#6977](https://github.com/mapbox/mapbox-gl-js/pull/6977)) (h/t [sergei-zelinsky](https://github.com/sergei-zelinsky))
+* Fix memory leak caused by a failure to remove all controls added to the map ([#7042](https://github.com/mapbox/mapbox-gl-js/pull/7042))
+* Fix bug where the build would fail when using mapbox-gl webpack 2 and UglifyJSPlugin ([#4359](https://github.com/mapbox/mapbox-gl-js/issues/4359), fixed by [#6956](https://api.github.com/repos/mapbox/mapbox-gl-js/pulls/6956))
+* Fix bug where fitBounds called with coordinates outside the bounds of Web Mercator resulted in uncaught error ([#6906](https://github.com/mapbox/mapbox-gl-js/issues/6906), fixed by [#6918](https://api.github.com/repos/mapbox/mapbox-gl-js/pulls/6918))
+* Fix bug wherein `Map#querySourceFeatures` was returning bad results on zooms > maxZoom ([#7061](https://github.com/mapbox/mapbox-gl-js/pull/7061))
+* Relax typing for equality and order expressions ([#6459](https://github.com/mapbox/mapbox-gl-js/issues/6459), fixed by [#6961](https://api.github.com/repos/mapbox/mapbox-gl-js/pulls/6961))
+* Fix bug where `queryPadding` for all layers in a source was set by the first layer, causing incorrect querying on other layers and, in some cases, incorrect firing of events associated with individual layers ([#6909](https://github.com/mapbox/mapbox-gl-js/pull/6909))
+
+## ✨ Features and improvements
+
+* Performance Improvements:
+  * Stop unnecessary serialization of symbol source features. ([#7013](https://github.com/mapbox/mapbox-gl-js/pull/7013))
+  * Optimize calculation for getting visible tile coordinates ([#6998](https://github.com/mapbox/mapbox-gl-js/pull/6998))
+  * Improve performance of creating `{Glyph/Image}Atlas`es ([#7091](https://github.com/mapbox/mapbox-gl-js/pull/7091))
+  * Optimize and simplify tile retention logic ([#6995](https://github.com/mapbox/mapbox-gl-js/pull/6995))
+* Add a user turnstile event for users accessing Mapbox APIs ([#6980](https://github.com/mapbox/mapbox-gl-js/pull/6980))
+* Add support for autogenerating feature ids for GeoJSON sources so they can be used more easily with the `Map#setFeatureState` API ([#7043](https://www.github.com/mapbox/mapbox-gl-js/pull/7043))) ([#7091](https://github.com/mapbox/mapbox-gl-js/pull/7091))
+* Add ability to style symbol layers labels with multiple fonts and text sizes via `"format"` expression ([#6994](https://www.github.com/mapbox/mapbox-gl-js/pull/6994))
+* Add customAttribution option to AttributionControl ([#7033](https://github.com/mapbox/mapbox-gl-js/pull/7033)) (h/t [mklopets](https://github.com/mklopets))
+* Publish Flow type definitions alongside compiled bundle ([#7079](https://api.github.com/repos/mapbox/mapbox-gl-js/pulls/7079))
+* Introduce symbol cross fading when crossing integer zoom levels to prevent labels from disappearing before newly loaded tiles' labels can be rendered ([#6951](https://github.com/mapbox/mapbox-gl-js/pull/6951))
+* Improvements in label collision detection ([#6925](https://api.github.com/repos/mapbox/mapbox-gl-js/pulls/6925)))
+
+## 0.47.0
+
+## ✨ Features and improvements
+* Add configurable drag pan threshold ([#6809](https://github.com/mapbox/mapbox-gl-js/pull/6809)) (h/t [msbarry](https://github.com/msbarry))
+* Add `raster-resampling` raster paint property ([#6411](https://github.com/mapbox/mapbox-gl-js/pull/6411)) (h/t [andrewharvey](https://github.com/andrewharvey))
+* Add `symbol-placement: line-center` ([#6821](https://github.com/mapbox/mapbox-gl-js/pull/6821))
+* Add methods for inspecting GeoJSON clusters ([#3318](https://github.com/mapbox/mapbox-gl-js/issues/3318), fixed by [#6829](https://github.com/mapbox/mapbox-gl-js/pull/6829))
+* Add warning to geolocate control when unsupported ([#6923](https://github.com/mapbox/mapbox-gl-js/pull/6923)) (h/t [aendrew](https://github.com/aendrew))
+* Upgrade geojson-vt to 3.1.4 ([#6942](https://github.com/mapbox/mapbox-gl-js/pull/6942))
+* Include link to license in compiled bundle ([#6975](https://github.com/mapbox/mapbox-gl-js/pull/6975))
+
+## 🐛 Bug fixes
+* Use updateData instead of re-creating buffers for repopulated paint arrays ([#6853](https://github.com/mapbox/mapbox-gl-js/pull/6853))
+* Fix ScrollZoom handler setting tr.zoom = NaN ([#6924](https://github.com/mapbox/mapbox-gl-js/pull/6924))
+  - Failed to invert matrix error ([#6486](https://github.com/mapbox/mapbox-gl-js/issues/6486), fixed by [#6924](https://github.com/mapbox/mapbox-gl-js/pull/6924))
+  - Fixing matrix errors ([#6782](https://github.com/mapbox/mapbox-gl-js/issues/6782), fixed by [#6924](https://github.com/mapbox/mapbox-gl-js/pull/6924))
+* Fix heatmap tile clipping when layers are ordered above it ([#6806](https://github.com/mapbox/mapbox-gl-js/issues/6806), fixed by [#6807](https://github.com/mapbox/mapbox-gl-js/pull/6807))
+* Fix video source in safari (macOS and iOS) ([#6443](https://github.com/mapbox/mapbox-gl-js/issues/6443), fixed by [#6811](https://github.com/mapbox/mapbox-gl-js/pull/6811))
+* Do not reload errored tiles ([#6813](https://github.com/mapbox/mapbox-gl-js/pull/6813))
+* Fix send / remove timing bug in Dispatcher ([#6756](https://github.com/mapbox/mapbox-gl-js/pull/6756), fixed by [#6826](https://github.com/mapbox/mapbox-gl-js/pull/6826))
+* Fix flyTo not zooming to exact given zoom ([#6828](https://github.com/mapbox/mapbox-gl-js/pull/6828))
+* Don't stop animation on map resize ([#6636](https://github.com/mapbox/mapbox-gl-js/pull/6636))
+* Fix map.getBounds() with rotated map ([#6875](https://github.com/mapbox/mapbox-gl-js/pull/6875)) (h/t [zoltan-mihalyi](https://github.com/zoltan-mihalyi))
+* Support collators in feature filter expressions. ([#6929](https://github.com/mapbox/mapbox-gl-js/pull/6929))
+* Fix Webpack production mode compatibility ([#6981](https://github.com/mapbox/mapbox-gl-js/pull/6981))
+
 ## 0.46.0
 
 ### ⚠️ Breaking changes
@@ -230,7 +288,7 @@
 
 - Provide default element for Marker class [#5661](https://github.com/mapbox/mapbox-gl-js/pull/5661)
 
-# 0.42.0 (November 10, 2017)
+## 0.42.0 (November 10, 2017)
 
 ### ⚠️ Breaking changes
 
