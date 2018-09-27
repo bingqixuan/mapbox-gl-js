@@ -2,6 +2,7 @@
 
 import DepthMode from '../gl/depth_mode';
 import StencilMode from '../gl/stencil_mode';
+import CullFaceMode from '../gl/cull_face_mode';
 import {
     fillExtrusionUniformValues,
     fillExtrusionPatternUniformValues,
@@ -69,12 +70,13 @@ function drawExtrusionTiles(painter, source, layer, coords, depthMode, stencilMo
             layer.paint.get('fill-extrusion-translate'),
             layer.paint.get('fill-extrusion-translate-anchor'));
 
+        const shouldUseVerticalGradient = layer.paint.get('fill-extrusion-vertical-gradient');
         const uniformValues = image ?
-            fillExtrusionPatternUniformValues(matrix, painter, coord, crossfade, tile) :
-            fillExtrusionUniformValues(matrix, painter);
+            fillExtrusionPatternUniformValues(matrix, painter, shouldUseVerticalGradient, coord, crossfade, tile) :
+            fillExtrusionUniformValues(matrix, painter, shouldUseVerticalGradient);
 
 
-        program.draw(context, context.gl.TRIANGLES, depthMode, stencilMode, colorMode,
+        program.draw(context, context.gl.TRIANGLES, depthMode, stencilMode, colorMode, CullFaceMode.backCCW,
             uniformValues, layer.id, bucket.layoutVertexBuffer, bucket.indexBuffer,
             bucket.segments, layer.paint, painter.transform.zoom,
             programConfiguration);
