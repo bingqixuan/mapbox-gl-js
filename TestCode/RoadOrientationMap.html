@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Road Orientations Interactive Map</title>
+    <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+    <meta property="og:title" content="Road orientations on an interactive map" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://mourner.github.io/road-orientation-map/" />
+    <meta property="og:image" content="https://mourner.github.io/road-orientation-map/screenshot.png" />
+    <meta property="og:image:width" content="1010" />
+    <meta property="og:image:height" content="636" />
+    <meta property="og:image:alt" content="A polar histogram of road orientations in New York" />
+
+    <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v0.47.0/mapbox-gl.js'></script>
+    <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v0.47.0/mapbox-gl.css' rel='stylesheet' />
+
+    <script src='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v2.3.0/mapbox-gl-geocoder.min.js'></script>
+    <link href='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v2.3.0/mapbox-gl-geocoder.css' rel='stylesheet' />
+
+    <script src='https://unpkg.com/cheap-ruler@2.5.1/cheap-ruler.js'></script>
+    <script src='https://bundle.run/lineclip@1.1.5'></script>
+
+    <style>
+        body { margin: 0; padding: 0; }
+        #map { position: absolute; width: 100%; height: 100%; }
+        #canvas { position: absolute; top: 10px; right: 10px; }
+        @media (max-width: 767px) { #canvas { pointer-events: none; } }
+        #about {
+            padding: 5px 10px; background: rgba(255,255,255,0.8); position: absolute; top: 0; left: 0;
+            color: #06f; font: 14px/22px "Helvetica Neue", sans-serif; text-decoration: none; border-bottom-right-radius: 10px; }
+        #about:hover { text-decoration: underline; }
+        .mapboxgl-ctrl-top-left .mapboxgl-ctrl-group { margin-top: 40px; }
+    </style>
+</head>
+<body>
+<div id="map"></div>
+<canvas id="canvas"></canvas>
+<script>
+    // my personal token - please generate your own at https://www.mapbox.com/studio/
+    mapboxgl.accessToken = 'pk.eyJ1IjoibW91cm5lciIsImEiOiJWWnRiWG1VIn0.j6eccFHpE3Q04XPLI7JxbA';
+
+    // initialize a Mapbox map with the Basic style, centered in New York
+    var map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/mapbox/cjf4m44iw0uza2spb3q0a7s41',
+        center: [-73.992, 40.734],
+        zoom: 12,
+        hash: true
+    });
+
+    map.addControl(new MapboxGeocoder({accessToken: mapboxgl.accessToken}), 'bottom-right');
+    map.addControl(new mapboxgl.NavigationControl(), 'top-left');
+
+    var h = 300; // size of the chart canvas
+    var r = h / 2; // radius of the polar histogram
+    var numBins = 64; // number of orientation bins spread around 360 deg.
+
+    var canvas = document.getElementById('canvas');
+    var ctx = canvas.getContext('2d');
+
+    canvas.style.width = canvas.style.height = h + 'px';
+    canvas.width = canvas.height = h;
+
+    if (window.devicePixelRatio > 1) {
+        canvas.width = canvas.height = h * 2;
+        ctx.scale(2, 2);
+    }
+
+    function updateOrientations() {
+        ctx.clearRect(0, 0, h, h);
+
+        var bearing = map.getBearing();
+
+        ctx.save();
+        ctx.translate(r, r);
+        ctx.rotate(-bearing * Math.PI / 180);
+
+        ctx.fillStyle = 'rgba(255,255,255,0.8)';
+        ctx.beginPath();
+        ctx.arc(0, 0, r, 0, 2 * Math.PI, false);
+        ctx.fill();
+
+        ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+        ctx.beginPath();
+        ctx.moveTo(-r, 0);
+        ctx.lineTo(r, 0);
+        ctx.moveTo(0, -r);
+        ctx.lineTo(0, r);
+        ctx.stroke();
+
+        var features = map.queryRenderedFeatures({layers: ['road']});
+        if (features.length === 0) {
+            ctx.restore();
+            return;
+        }
+
+        var ruler = cheapRuler(map.getCenter().lat);
+        var bounds = map.getBounds();
+        var bbox = [bounds.getWest(), bounds.getSouth(), bounds.getEast(), bounds.getNorth()];
+        var bins = new Float64Array(numBins);
+
+        for (var i = 0; i < features.length; i++) {
+            var geom = features[i].geometry;
+            var lines = geom.type === 'LineString' ? [geom.coordinates] : geom.coordinates;
+
+            // clip lines to screen bbox for more exact analysis
+            var clippedLines = [];
+            for (var j = 0; j < lines.length; j++) {
+                clippedLines.push.apply(clippedLines, lineclip(lines[j], bbox));
+            }
+
+            // update orientation bins from each clipped line
+            for (j = 0; j < clippedLines.length; j++) {
+                analyzeLine(bins, ruler, clippedLines[j], features[i].properties.oneway !== 'true');
+            }
+        }
+
+        var binMax = Math.max.apply(null, bins);
+
+        for (i = 0; i < numBins; i++) {
+            var a0 = ((i - 0.5) * 360 / numBins - 90) * Math.PI / 180;
+            var a1 = ((i + 0.5) * 360 / numBins - 90) * Math.PI / 180;
+            ctx.fillStyle = interpolateSinebow((2 * i % numBins) / numBins);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.arc(0, 0, r * Math.sqrt(bins[i] / binMax), a0, a1, false);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        ctx.restore();
+    }
+
+    function analyzeLine(bins, ruler, line, isTwoWay) {
+        for (var i = 0; i < line.length - 1; i++) {
+            var bearing = ruler.bearing(line[i], line[i + 1]);
+            var distance = ruler.distance(line[i], line[i + 1]);
+
+            var k0 = Math.round((bearing + 360) * numBins / 360) % numBins; // main bin
+            var k1 = Math.round((bearing + 180) * numBins / 360) % numBins; // opposite bin
+
+            bins[k0] += distance;
+            if (isTwoWay) bins[k1] += distance;
+        }
+    }
+
+    // rainbow colors for the chart http://basecase.org/env/on-rainbows
+    function interpolateSinebow(t) {
+        t = 0.5 - t;
+        var r = Math.floor(250 * Math.pow(Math.sin(Math.PI * (t + 0 / 3)), 2));
+        var g = Math.floor(250 * Math.pow(Math.sin(Math.PI * (t + 1 / 3)), 2));
+        var b = Math.floor(250 * Math.pow(Math.sin(Math.PI * (t + 2 / 3)), 2));
+        return 'rgb(' + r + ',' + g + ',' + b + ')';
+    }
+
+    map.on('load', function () {
+        updateOrientations();
+        // update the chart on moveend; we could do that on move,
+        // but this is slow on some zoom levels due to a huge amount of roads
+        map.on('moveend', updateOrientations);
+    });
+</script>
+</body>
+</html>
