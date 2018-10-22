@@ -17,7 +17,7 @@ const config: Config = {
         }
     },
     REQUIRE_ACCESS_TOKEN: true,
-    ACCESS_TOKEN: null
+    ACCESS_TOKEN: 'pk.eyJ1IjoiYmluZ3FpeHVhbiIsImEiOiJjaXpueDN0dXowMmpiMndydnlvMTJvOTE3In0.D1J4poEFVeDk2T_fZD9wqw'
 };
 
 export default config;
