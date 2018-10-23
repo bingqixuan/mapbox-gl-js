@@ -13,7 +13,7 @@
   ],
   "format": "pbf",
   "mapbox_logo": true,
-  "maxzoom": 16,
+  "maxzoom": 7,
   "minzoom": 0,
   "name": "Mapbox Streets V7 + Vector Terrain V2",
   "scheme": "xyz",

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8' />
+    <title>StreamLine</title>
+    <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+    <script src='../dist/mapbox-gl.js'></script>
+    <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v0.50.0/mapbox-gl.css' rel='stylesheet' />
+    <style>
+        body { margin:0; padding:0; }
+        #map { position:absolute; top:0; bottom:0; width:100%; }
+    </style>
+</head>
+<body>
+
+<div id='map'></div>
+<script>
+    var map = new mapboxgl.Map({
+        container: 'map',
+//        style: 'mapbox://styles/mapbox/streets-v9',
+        style: './style/streets-v9.json',
+        center: [1177.61694, 41.86625],
+        zoom: 6.99,
+        pitch: 40,
+        bearing: 20
+    });
+
+    map.on('load', function() {
+
+        map.addLayer({
+            "id": "streamline",
+            "type": "line",
+            "source": {
+                'type':'vector',
+                'tiles':["http://192.168.3.100:3000/tiles/wsl/{z}/{x}/{y}.pbf"],
+                'maxzoom':11
+            },
+            "source-layer": "C1D09050000090500011nc_uv_0_0wsl",
+            "layout": {
+                "line-join": "round",
+                "line-cap": "round"
+            },
+            "paint": {
+                "line-color": "#0000ff",
+                "line-width": 1
+            }
+        });
+    });
+</script>
+
+</body>
+</html>
