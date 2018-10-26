@@ -1463,9 +1463,9 @@ class Map extends Camera {
 
         const controlContainer = this._controlContainer = DOM.create('div', 'mapboxgl-control-container', container);
         const positions = this._controlPositions = {};
-        // ['top-left', 'top-right', 'bottom-left', 'bottom-right'].forEach((positionName) => {
-        //     positions[positionName] = DOM.create('div', `mapboxgl-ctrl-${positionName}`, controlContainer);
-        // });
+        ['top-left', 'top-right', 'bottom-left', 'bottom-right'].forEach((positionName) => {
+            positions[positionName] = DOM.create('div', `mapboxgl-ctrl-${positionName}`, controlContainer);
+        });
     }
 
     _resizeCanvas(width: number, height: number) {
