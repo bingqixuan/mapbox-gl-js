@@ -82,7 +82,7 @@
   },
   "sources": {
     "composite": {
-      "url": "./style/mapbox-streets-v7.json",
+      "url": "http://localhost:3456/mapbox-gl-js/TestCode/style/mapbox-streets-v7.json",
       "type": "vector"
     }
   },

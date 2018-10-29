@@ -22,7 +22,8 @@
         center: [-87.61694, 41.86625],
         zoom: 15.99,
         pitch: 40,
-        bearing: 20
+        bearing: 20,
+        localIdeographFontFamily: "'Noto Sans', 'Noto Sans CJK SC', sans-serif"
     });
 
     map.on('load', function() {
@@ -52,6 +53,10 @@
                 'fill-extrusion-opacity': 0.5
             }
         });
+
+        map.setLayoutProperty('country-label-lg', 'text-field', ['get', 'name_zh']);
+        map.setLayoutProperty('state-label-lg', 'text-field', ['get', 'name_zh']);
+        map.setLayoutProperty('place-label-lg', 'text-field', ['get', 'name_zh']);
     });
 </script>
 
