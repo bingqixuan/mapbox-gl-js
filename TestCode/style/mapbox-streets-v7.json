@@ -12,7 +12,6 @@
     0
   ],
   "format": "pbf",
-  "mapbox_logo": true,
   "maxzoom": 10,
   "minzoom": 0,
   "name": "Mapbox Streets V7 + Vector Terrain V2",

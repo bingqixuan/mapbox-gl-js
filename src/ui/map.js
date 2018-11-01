@@ -443,7 +443,7 @@ class Map extends Camera {
 
         const positionContainer = this._controlPositions[position];
         if (position.indexOf('bottom') !== -1) {
-            // positionContainer.insertBefore(controlElement, positionContainer.firstChild);
+            positionContainer.insertBefore(controlElement, positionContainer.firstChild);
         } else {
             positionContainer.appendChild(controlElement);
         }
