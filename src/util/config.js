@@ -4,7 +4,8 @@ type Config = {|
   API_URL: string,
   EVENTS_URL: string,
   REQUIRE_ACCESS_TOKEN: boolean,
-  ACCESS_TOKEN: ?string
+  ACCESS_TOKEN: ?string,
+  MAX_PARALLEL_IMAGE_REQUESTS: number
 |};
 
 const config: Config = {
@@ -17,8 +18,9 @@ const config: Config = {
         }
     },
     REQUIRE_ACCESS_TOKEN: true,
-    ACCESS_TOKEN: 'pk.eyJ1IjoiYmluZ3FpeHVhbiIsImEiOiJjam56bTFuZW0xbzJsM3Fyd3B1cmRsa2k2In0.kuUVdYKBNNfoEfp1U0AK2Q'
+    ACCESS_TOKEN: 'pk.eyJ1IjoiYmluZ3FpeHVhbiIsImEiOiJjam56bTFuZW0xbzJsM3Fyd3B1cmRsa2k2In0.kuUVdYKBNNfoEfp1U0AK2Q',
     // ACCESS_TOKEN: 'pk.eyJ1IjoiYmluZ3FpeHVhbiIsImEiOiJjaXpueDN0dXowMmpiMndydnlvMTJvOTE3In0.D1J4poEFVeDk2T_fZD9wqw'
+	MAX_PARALLEL_IMAGE_REQUESTS: 16
 };
 
 export default config;

@@ -397,7 +397,7 @@ class Style extends Evented {
     _updateWorkerLayers(updatedIds: Array<string>, removedIds: Array<string>) {
         this.dispatcher.broadcast('updateLayers', {
             layers: this._serializeLayers(updatedIds),
-            removedIds: removedIds
+            removedIds
         });
     }
 
@@ -598,7 +598,7 @@ class Style extends Evented {
             layer = createStyleLayer(layerObject);
             this._validateLayer(layer);
 
-            layer.setEventedParent(this, {layer: {id: id}});
+            layer.setEventedParent(this, {layer: {id}});
         }
 
         const index = before ? this._order.indexOf(before) : this._order.length;
@@ -786,12 +786,18 @@ class Style extends Evented {
 
     /**
      * Get a layout property's value from a given layer
-     * @param {string} layer the layer to inspect
+     * @param {string} layerId the layer to inspect
      * @param {string} name the name of the layout property
      * @returns {*} the property value
      */
-    getLayoutProperty(layer: string, name: string) {
-        return this.getLayer(layer).getLayoutProperty(name);
+    getLayoutProperty(layerId: string, name: string) {
+        const layer = this.getLayer(layerId);
+        if (!layer) {
+            this.fire(new ErrorEvent(new Error(`The layer '${layerId}' does not exist in the map's style.`)));
+            return;
+        }
+
+        return layer.getLayoutProperty(name);
     }
 
     setPaintProperty(layerId: string, name: string, value: any) {
@@ -986,7 +992,7 @@ class Style extends Evented {
         }
 
         this.dispatcher.broadcast('loadWorkerSource', {
-            name: name,
+            name,
             url: SourceType.workerSourceURL
         }, callback);
     }
@@ -1025,10 +1031,10 @@ class Style extends Evented {
             return false;
         }
         return emitValidationErrors(this, validate.call(validateStyle, extend({
-            key: key,
+            key,
             style: this.serialize(),
-            value: value,
-            styleSpec: styleSpec
+            value,
+            styleSpec
         }, props)));
     }
 
