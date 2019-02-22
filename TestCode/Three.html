@@ -67,8 +67,8 @@
             const m = new THREE.Matrix4().fromArray(matrix);
             const l = new THREE.Matrix4().makeTranslation(this.translate[0], this.translate[1], this.translate[2])
                 .scale(new THREE.Vector3(this.scale, -this.scale, this.scale));
-            this.cube.rotation.x += 0.01;
-            this.cube.rotation.y += 0.01;
+            // this.cube.rotation.x += 0.01;
+            // this.cube.rotation.y += 0.01;
 
             this.camera.projectionMatrix.elements = matrix;
             this.camera.projectionMatrix = m.multiply(l);
